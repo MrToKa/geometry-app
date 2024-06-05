@@ -52,30 +52,17 @@ const App = () => {
     return true;
   };
 
-  // Function to group circles into rows and columns
-  const groupCircles = (width, height, spacing, diameters) => {
-    let groups = [];
-    let currentGroup = [];
-    let currentWidth = spacing;
-
-    for (let i = 0; i < diameters.length; i++) {
-      if (currentWidth + diameters[i].value + spacing > width) {
-        groups.push(currentGroup);
-        currentGroup = [];
-        currentWidth = spacing;
+  const groupCirclesByDiameter = (diameters) => {
+    const groups = {};
+    diameters.forEach(d => {
+      if (!groups[d.value]) {
+        groups[d.value] = [];
       }
-      currentGroup.push(diameters[i]);
-      currentWidth += diameters[i].value + spacing;
-    }
-
-    if (currentGroup.length > 0) {
-      groups.push(currentGroup);
-    }
-
-    return groups;
+      groups[d.value].push(d);
+    });
+    return Object.values(groups).sort((a, b) => b[0].value - a[0].value);
   };
 
-  // Modified drawShapes function to use grouping logic
   const drawShapes = (width, height, spacing, diameters) => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
@@ -88,38 +75,52 @@ const App = () => {
     ctx.strokeStyle = 'black';
     ctx.strokeRect(50, 50, width, height);
 
-    const groups = groupCircles(width, height, spacing, diameters);
+    const groups = groupCirclesByDiameter(diameters);
 
-    let y = 50 + height - spacing;
+    let startX = 50 + spacing;
+    let startY = 50 + height - spacing;
 
     for (let group of groups) {
-      let x = 50 + spacing;
-      let maxHeightInRow = 0;
+      let diameter = group[0].value;
+      let numRows = Math.min(Math.floor((height - spacing) / (diameter + spacing)), 8);
+      let numCols = Math.min(Math.ceil(group.length / numRows), 12);
+      let x = startX;
+      let y = startY;
 
-      for (let { value: diameter, originalIndex } of group) {
-        if (x + diameter + spacing > 50 + width) {
-          x = 50 + spacing;
-          y -= maxHeightInRow + spacing;
-          maxHeightInRow = 0;
+      let positions = [];
+      for (let row = 0; row < numRows; row++) {
+        for (let col = 0; col < numCols; col++) {
+          positions.push({ x: startX + col * (diameter + spacing), y: startY - row * (diameter + spacing) });
         }
-        if (y - diameter < 50 + spacing) {
-          break;
-        }
+      }
+
+      positions = positions.slice(0, group.length);
+      positions.sort((a, b) => {
+        if (a.y === b.y) return a.x - b.x;
+        return b.y - a.y;
+      });
+
+      for (let i = 0; i < group.length; i++) {
+        let { value, originalIndex } = group[i];
+        let pos = positions[i];
+
         ctx.beginPath();
-        ctx.arc(x + diameter / 2, y - diameter / 2, diameter / 2, 0, 2 * Math.PI);
+        ctx.arc(pos.x + value / 2, pos.y - value / 2, value / 2, 0, 2 * Math.PI);
         ctx.stroke();
-        
+
         // Draw the original order number inside the circle
-        ctx.font = `${Math.min(diameter / 2, 40)}px Arial`; // Adjusted font size
+        ctx.font = `${Math.min(value / 2, 40)}px Arial`; // Adjusted font size
         ctx.fillStyle = 'black';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText(originalIndex, x + diameter / 2, y - diameter / 2);
-
-        maxHeightInRow = Math.max(maxHeightInRow, diameter);
-        x += diameter + spacing;
+        ctx.fillText(originalIndex, pos.x + value / 2, pos.y - value / 2);
       }
-      y -= maxHeightInRow + spacing;
+
+      startX += numCols * (diameter + spacing);
+      if (startX + diameter + spacing > 50 + width) {
+        startX = 50 + spacing;
+        startY -= numRows * (diameter + spacing);
+      }
     }
   };
 
