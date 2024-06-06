@@ -82,8 +82,8 @@ const App = () => {
 
     for (let group of groups) {
       let diameter = group[0].value;
-      let numRows = Math.min(Math.floor((height - spacing) / (diameter + spacing)), 8);
-      let numCols = Math.min(Math.ceil(group.length / numRows), 12);
+      let numRows = Math.min(Math.floor((height - spacing) / (diameter + spacing)), 6);
+      let numCols = Math.min(Math.ceil(group.length / numRows), 20);
 
       if (numRows > numCols) {
         numRows = Math.min(Math.ceil(Math.sqrt(group.length)));
