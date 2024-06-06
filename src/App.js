@@ -84,6 +84,12 @@ const App = () => {
       let diameter = group[0].value;
       let numRows = Math.min(Math.floor((height - spacing) / (diameter + spacing)), 8);
       let numCols = Math.min(Math.ceil(group.length / numRows), 12);
+
+      if (numRows > numCols) {
+        numRows = Math.min(Math.ceil(Math.sqrt(group.length)));
+        numCols = Math.min(Math.ceil(Math.sqrt(group.length)));
+      }
+
       let x = startX;
       let y = startY;
 
