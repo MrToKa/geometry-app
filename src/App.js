@@ -237,10 +237,10 @@ const App = () => {
     canvas.toBlob((blob) => {
       const link = document.createElement('a');
       link.href = URL.createObjectURL(blob);
-      link.download = 'canvas_image.png'; // Change to PNG
+      link.download = `${selectedTrayName}.png`; // Use the selected tray name for the file name
       link.click();
     }, 'image/png'); // Change to PNG
-  };
+  };  
 
   useEffect(() => {
     const canvas = canvasRef.current;
