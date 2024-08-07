@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import './App.css';
 
 const App = () => {
+  const [trayNames, setTrayNames] = useState([]);
+  const [selectedTrayName, setSelectedTrayName] = useState('');
   const [rectangle, setRectangle] = useState({ width: '', height: '' });
   const [diameters, setDiameters] = useState('');
   const [result, setResult] = useState(null);
@@ -10,6 +12,28 @@ const App = () => {
   const canvasRef = useRef(null);
 
   const spacing = 1 * 4; // Fixed spacing value, scaled up by 4
+
+  useEffect(() => {
+    // Fetch tray names from the API
+    fetch('https://localhost:7141/api/Tray/names')
+      .then(response => response.json())
+      .then(data => setTrayNames(data))
+      .catch(error => console.error('Error fetching tray names:', error));
+  }, []);
+
+  const handleTrayNameChange = (e) => {
+    setSelectedTrayName(e.target.value);
+
+    // Fetch tray data from the API
+    fetch(`https://localhost:7141/api/Tray/${e.target.value}`)
+      .then(response => response.json())
+      .then(data => {
+        setRectangle({ width: data.width, height: data.height });
+        const diametersText = data.cables.map(cable => cable.cableInfo).join('\n');
+        setDiameters(diametersText);
+      })
+      .catch(error => console.error('Error fetching tray data:', error));
+  };
 
   const handleRectangleChange = (e) => {
     const { name, value } = e.target;
@@ -56,7 +80,7 @@ const App = () => {
 
       const groupKey = parts[1];
       const diameter = parseFloat(parts[2]) * 4; // Scale up the diameter
-      const side = parts[4] === 'true' ? 'right' : 'left';
+      const side = parts[4] === 'True' ? 'right' : 'left';
 
       if (!groupedData[groupKey]) {
         groupedData[groupKey] = { side, circles: [] };
@@ -68,7 +92,7 @@ const App = () => {
     const groups = Object.values(groupedData);
     const circlesFit = canCirclesFit(rectWidth, rectHeight, spacing, groups);
     setResult(circlesFit);
-    drawShapes(rectWidth, rectHeight, spacing, groups);
+    drawShapes(rectWidth, rectHeight, spacing, groups, selectedTrayName);
 
     // Calculate total sum of diameters
     let totalDiameterSum = groups.reduce((sum, group) => {
@@ -112,7 +136,7 @@ const App = () => {
     return true;
   };
 
-  const drawShapes = (width, height, spacing, groups) => {
+  const drawShapes = (width, height, spacing, groups, trayName) => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -120,6 +144,13 @@ const App = () => {
     // Ensure the canvas size matches the drawn content
     canvas.width = width + 100;  // Additional padding
     canvas.height = height + 100; // Additional padding
+
+    // Add title text above the rectangle
+    ctx.font = '24px Arial';
+    ctx.fillStyle = 'black';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(`Cables bundles laying concept for tray ${trayName}`, 50 + width / 2, 20);
 
     // Draw rectangle
     ctx.strokeStyle = 'black';
@@ -222,6 +253,17 @@ const App = () => {
       <h1>Geometric Calculations</h1>
       <form onSubmit={handleSubmit}>
         <div>
+          <label>Tray Name:</label>
+          <select value={selectedTrayName} onChange={handleTrayNameChange} required>
+            <option value="">Select a tray</option>
+            {trayNames.map(tray => (
+              <option key={tray.name} value={tray.name}>
+                {tray.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
           <label>Rectangle Width:</label>
           <input type="number" name="width" value={rectangle.width} onChange={handleRectangleChange} required />
         </div>
@@ -245,7 +287,7 @@ const App = () => {
       <button onClick={handleSave}>Save as PNG</button>
       <canvas ref={canvasRef} style={{ width: '100%', height: '100%' }} />
     </div>
-  );
+  );  
 };
 
 export default App;
