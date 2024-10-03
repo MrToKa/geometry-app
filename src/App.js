@@ -80,7 +80,7 @@ const App = () => {
 
       const groupKey = parts[1];
       const diameter = parseFloat(parts[2]) * 4; // Scale up the diameter
-      const side = parts[4] === 'True' ? 'right' : 'left';
+      const side = parts[4] === 'true' ? 'right' : 'left';
 
       if (!groupedData[groupKey]) {
         groupedData[groupKey] = { side, circles: [] };
